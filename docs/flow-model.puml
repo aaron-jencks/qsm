@@ -1,0 +1,36 @@
+@startuml
+
+actor Client
+control QSM
+queue QSMQueue
+control State
+Client -> QSM : Calls "loop()"
+loop Until Queue Empty
+QSM -> QSMQueue : Calls "pop()"
+alt Receives None
+QSM -> Client : Returns
+else Received a state name
+QSM -> QSM : Checks if state exists
+alt State Does not Exist
+QSM -> Client : Throw NoSuchStateException
+else State Exists
+QSM -> QSM : Generates StateContext
+QSM -> State : Calls "execute()"
+alt StateContent is not None
+State -> State : Checks if subhandler exists
+alt No Subhandler Exists
+State -> QSM : Throw NoSuchHandlerException
+else Subhandler Exists
+State -> PayloadHandler : Calls
+end
+else StateContent is None
+State -> PayloadHandler : Calls Default
+end
+PayloadHandler -> QSMQueue : May enqueue more states
+PayloadHandler -> State : Returns StateContent
+State -> QSM : Returns StateContent
+end
+end
+end
+
+@enduml
