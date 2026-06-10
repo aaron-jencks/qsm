@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import logging
-from queue import Queue
 from typing import Any
 
+from deque import StringDequeQueue
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class StateContext:
         context: Shared workflow data owned by the ``QSM`` instance.
     """
 
-    queue: Queue
+    queue: StringDequeQueue
     context: Any
 
 
