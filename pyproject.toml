@@ -3,15 +3,25 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "qsm"
-version = "0.1.0"
+name = "qstate"
+version = "1.0.0"
 description = "A Queued State Machine Implementation for Python"
+authors = [
+    {name = "Aaron Jencks", email = "aaronjencks@gmail.com"}
+]
+maintainers = [
+    {name = "Aaron Jencks", email = "aaronjencks@gmail.com"}
+]
+keywords = [
+    "state-machine", "queue", "queued state machine", "state machine", "queued state-machine"
+]
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -21,6 +31,10 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = []
+
+[project.urls]
+Repository = "https://github.com/aaron-jencks/qsm.git"
+Issues = "https://github.com/aaron-jencks/qsm/issues"
 
 [project.optional-dependencies]
 dev = [

@@ -10,6 +10,10 @@ and keeps going until the queue is empty.
 Use `append()` for normal follow-up work. Use `prepend()` when a state needs to
 run before the work that is already waiting.
 
+## Installation
+
+You can install this package with `pip install qstate`
+
 ## Quickstart
 
 ```python
