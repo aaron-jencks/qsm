@@ -1,8 +1,16 @@
 import pytest
 
-from qsm.exceptions import NoSuchHandlerException, NoSuchStateException
-from qsm.qsm import QSM
-from qsm.states import State, StateContent, StateContext
+from qsm import QSM, State, StateContext
+from qsm.exceptions import NoSuchStateException
+
+
+class RecordingState(State):
+    def __init__(self, name: str, calls: list[str]):
+        self.name = name
+        self.calls = calls
+
+    def execute(self, ctx: StateContext):
+        self.calls.append(self.name)
 
 
 def test_get_next_state_returns_none_when_queue_is_empty() -> None:
@@ -26,66 +34,95 @@ def test_execute_state_raises_for_unknown_state() -> None:
         machine.execute_state("missing")
 
 
-def test_state_uses_default_handler_when_content_is_none() -> None:
-    state = State()
+def test_execute_state_passes_queue_and_context_to_state() -> None:
+    seen: dict[str, object] = {}
 
-    def handler(ctx: StateContext) -> StateContent:
-        return StateContent(type="result", payload=ctx.content)
+    class ContextState(State):
+        def execute(self, ctx: StateContext):
+            seen["queue"] = ctx.queue
+            seen["context"] = ctx.context
 
-    state.default_handler = handler
+    context = {"name": "world"}
+    machine = QSM(initial_context=context)
+    machine.state_map["context"] = ContextState()
 
-    assert state.execute(ctx=_ctx(content=None)) == StateContent(
-        type="result",
-        payload=None,
-    )
-
-
-def test_state_uses_only_registered_handler_when_no_default_exists() -> None:
-    state = State()
-
-    def handler(ctx: StateContext) -> StateContent:
-        return StateContent(type="result", payload="ok")
-
-    state.handlers["only"] = handler
-
-    assert state.execute(ctx=_ctx(content=None)) == StateContent(
-        type="result",
-        payload="ok",
-    )
+    machine.execute_state("context")
+    assert seen["queue"] is machine.queue
+    assert seen["context"] is context
 
 
-def test_state_raises_when_no_content_and_multiple_handlers_without_default() -> None:
-    state = State()
-    state.handlers["a"] = lambda ctx: None
-    state.handlers["b"] = lambda ctx: None
-
-    with pytest.raises(NoSuchHandlerException):
-        state.execute(ctx=_ctx(content=None))
-
-
-def test_state_dispatches_by_content_type() -> None:
-    state = State()
-    state.handlers["event"] = lambda ctx: StateContent(
-        type="result",
-        payload=ctx.content.payload if ctx.content is not None else None,
-    )
-
-    result = state.execute(_ctx(StateContent(type="event", payload="hello")))
-
-    assert result == StateContent(type="result", payload="hello")
-
-
-def test_execute_current_state_returns_handler_result() -> None:
+def test_execute_current_state_returns_state_result() -> None:
+    calls: list[str] = []
     machine = QSM(initial_state="ready")
-    state = State()
-    state.default_handler = lambda ctx: StateContent(type="done", payload=True)
-    machine.state_map["ready"] = state
+    machine.state_map["ready"] = RecordingState("ready", calls)
 
-    assert machine.execute_current_state() == StateContent(
-        type="done",
-        payload=True,
-    )
+    machine.execute_current_state()
+    assert calls == ["ready"]
 
 
-def _ctx(content: StateContent | None) -> StateContext:
-    return StateContext(queue=None, content=content)
+def test_loop_executes_queued_states_in_order() -> None:
+    calls: list[str] = []
+    machine = QSM()
+    machine.state_map["first"] = RecordingState("first", calls)
+    machine.state_map["second"] = RecordingState("second", calls)
+
+    machine.queue.append("first")
+    machine.queue.append("second")
+    machine.loop()
+
+    assert calls == ["first", "second"]
+    assert machine.current_state == "second"
+
+
+def test_state_can_append_more_states_during_execution() -> None:
+    calls: list[str] = []
+
+    class AppendState(State):
+        def execute(self, ctx: StateContext) -> None:
+            calls.append("append")
+            ctx.queue.append("next")
+
+    machine = QSM()
+    machine.state_map["append"] = AppendState()
+    machine.state_map["next"] = RecordingState("next", calls)
+
+    machine.queue.append("append")
+    machine.loop()
+
+    assert calls == ["append", "next"]
+
+
+def test_state_can_prepend_more_states_during_execution() -> None:
+    calls: list[str] = []
+
+    class PrependState(State):
+        def execute(self, ctx: StateContext) -> None:
+            calls.append("prepend")
+            ctx.queue.prepend("urgent")
+
+    machine = QSM()
+    machine.state_map["prepend"] = PrependState()
+    machine.state_map["later"] = RecordingState("later", calls)
+    machine.state_map["urgent"] = RecordingState("urgent", calls)
+
+    machine.queue.append("prepend")
+    machine.queue.append("later")
+    machine.loop()
+
+    assert calls == ["prepend", "urgent", "later"]
+
+
+def test_states_share_mutable_context() -> None:
+    class IncrementState(State):
+        def execute(self, ctx: StateContext) -> None:
+            ctx.context["count"] += 1
+
+    context = {"count": 0}
+    machine = QSM(initial_context=context)
+    machine.state_map["increment"] = IncrementState()
+
+    machine.queue.append("increment")
+    machine.queue.append("increment")
+    machine.loop()
+
+    assert context == {"count": 2}

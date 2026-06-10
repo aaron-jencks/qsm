@@ -27,10 +27,10 @@ class QSM:
             queue=self.queue,
             context=self.context,
         )
-        return self.state_map[name].execute(ctx)
+        self.state_map[name].execute(ctx)
 
     def execute_current_state(self):
-        return self.execute_state(self.current_state)
+        self.execute_state(self.current_state)
 
     def loop(self):
         while not self.queue.empty():
