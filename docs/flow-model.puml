@@ -2,11 +2,11 @@
 
 actor Client
 control QSM
-queue QSMQueue
+queue StringDequeQueue
 control State
 Client -> QSM : Calls "loop()"
 loop Until Queue Empty
-QSM -> QSMQueue : Calls "get()"
+QSM -> StringDequeQueue : Calls "get()"
 alt Receives None
 QSM -> Client : Returns
 else Received a state name
@@ -16,18 +16,8 @@ QSM -> Client : Throw NoSuchStateException
 else State Exists
 QSM -> QSM : Generates StateContext
 QSM -> State : Calls "execute()"
-alt StateContent is not None
-State -> State : Checks if subhandler exists
-alt No Subhandler Exists
-State -> QSM : Throw NoSuchHandlerException
-else Subhandler Exists
-State -> PayloadHandler : Calls
-end
-else StateContent is None
-State -> PayloadHandler : Calls Default
-end
-PayloadHandler -> QSMQueue : May enqueue more states
-PayloadHandler -> State : Returns StateContent
+State -> StringDequeQueue : May enqueue more states
+State -> QSM : May modify context
 State -> QSM : Returns StateContent
 end
 end

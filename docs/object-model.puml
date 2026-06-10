@@ -1,56 +1,36 @@
 @startuml
 
-class QSMQueue {
-    - queue: List[str]
+class StringDequeQueue {
     + append(...state: str)
     + prepend(...state: str)
     + pop() -> Optional[str]
 }
 
-class StateContent {
-    + type: str
-    + payload: Any
-}
-
 class StateContext {
-    + queue: QSMQueue
-    + content: Optional[StateContent]
+    + queue: StringDequeQueue
+    + context: Any
 }
 
 class QSM {
-    - queue: QSMQueue
-    - state_map: Dict[str, State]
+    - queue: StringDequeQueue
+    + state_map: Dict[str, State]
     + current_state: str
+    - context: Any
     + get_next_state() -> Optional[str]
-    + execute_current_state(ctx: Optional[StateContent] = None) -> Optional[StateContent]
+    + execute_current_state()
     + loop(initial_state: Optional[str] = None)
-    + create_state(name: str, body: State)
-    + retrieve_state(name: str) -> Optional[State]
-    + update_state(name: str, new_body: State)
-    + delete_state(name: str)
 }
 
 class State {
-    - sub_handlers: Dict[str, PayloadHandler]
-    + execute(ctx: StateContext) -> Optional[StateContent]
-    + create_handler(name: str, handler: PayloadHandler)
-    + retrieve_handler(name: str) -> Optional[PayloadHandler]
-    + update_handler(name: str, new_handler: PayloadHandler)
-    + delete_handler(name: str)
+    + handlers: Dict[str, PayloadHandler]
+    + execute(ctx: StateContext)
 }
 
-interface PayloadHandler {
-    + execute(StateContext) -> Optional[StateContent]
-}
-
-QSM -o State
-QSM --> QSMQueue : "consumes from"
+QSM --o State
+QSM --> StringDequeQueue : "consumes from"
 QSM --* StateContext
-State --o PayloadHandler
-PayloadHandler --* StateContent
-PayloadHandler --> QSMQueue : "enqueues states"
-StateContext <-- PayloadHandler : "consumes"
-StateContext --o StateContent : "containerizes"
-StateContext --o QSMQueue : "containerizes"
-
+State --> StringDequeQueue : "enqueues states"
+StateContext --o QSM::context : "containerizes"
+StateContext --o QSM::queue : "containerizes"
+State --> StateContext : "consumes"
 @enduml
