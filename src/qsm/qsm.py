@@ -32,7 +32,10 @@ class QSM:
     def execute_current_state(self):
         self.execute_state(self.current_state)
 
-    def loop(self):
+    def loop(self, initial_state: Optional[str] = None):
+        if initial_state is None and len(self.current_state) == 0:
+            raise RuntimeError("An initial state must be provided or set before loop is run")
+        self.queue.append(self.current_state if initial_state is None else initial_state)
         while not self.queue.empty():
             state = self.get_next_state()
             if state is not None:
