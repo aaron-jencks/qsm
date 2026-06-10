@@ -61,13 +61,16 @@ def test_execute_current_state_returns_state_result() -> None:
 
 
 def test_loop_executes_queued_states_in_order() -> None:
+    class InitialState(State):
+        def execute(self, ctx: StateContext) -> None:
+            ctx.queue.append("first", "second")
+
     calls: list[str] = []
     machine = QSM()
+    machine.state_map["initial_state"] = InitialState()
     machine.state_map["first"] = RecordingState("first", calls)
     machine.state_map["second"] = RecordingState("second", calls)
 
-    machine.queue.append("first")
-    machine.queue.append("second")
     machine.loop()
 
     assert calls == ["first", "second"]
@@ -86,8 +89,7 @@ def test_state_can_append_more_states_during_execution() -> None:
     machine.state_map["append"] = AppendState()
     machine.state_map["next"] = RecordingState("next", calls)
 
-    machine.queue.append("append")
-    machine.loop()
+    machine.loop(initial_state="append")
 
     assert calls == ["append", "next"]
 
@@ -100,13 +102,16 @@ def test_state_can_prepend_more_states_during_execution() -> None:
             calls.append("prepend")
             ctx.queue.prepend("urgent")
 
+    class PrependInitialState(State):
+        def execute(self, ctx: StateContext) -> None:
+            ctx.queue.append("prepend", "later")
+
     machine = QSM()
+    machine.state_map["initial_state"] = PrependInitialState()
     machine.state_map["prepend"] = PrependState()
     machine.state_map["later"] = RecordingState("later", calls)
     machine.state_map["urgent"] = RecordingState("urgent", calls)
 
-    machine.queue.append("prepend")
-    machine.queue.append("later")
     machine.loop()
 
     assert calls == ["prepend", "urgent", "later"]
@@ -117,12 +122,16 @@ def test_states_share_mutable_context() -> None:
         def execute(self, ctx: StateContext) -> None:
             ctx.context["count"] += 1
 
+    class IncrementInitialState(State):
+        def execute(self, ctx: StateContext) -> None:
+            ctx.context["count"] = 0
+            ctx.queue.append("increment", "increment")
+
     context = {"count": 0}
     machine = QSM(initial_context=context)
+    machine.state_map["initial_state"] = IncrementInitialState()
     machine.state_map["increment"] = IncrementState()
 
-    machine.queue.append("increment")
-    machine.queue.append("increment")
     machine.loop()
 
     assert context == {"count": 2}
