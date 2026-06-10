@@ -94,7 +94,7 @@ def test_state_can_append_more_states_during_execution() -> None:
     assert calls == ["append", "next"]
 
 
-def test_state_can_prepend_more_states_during_execution() -> None:
+def test_state_can_prepend_more_states_during_execution_wo_flush() -> None:
     calls: list[str] = []
 
     class PrependState(State):
@@ -102,17 +102,13 @@ def test_state_can_prepend_more_states_during_execution() -> None:
             calls.append("prepend")
             ctx.queue.prepend("urgent")
 
-    class PrependInitialState(State):
-        def execute(self, ctx: StateContext) -> None:
-            ctx.queue.append("prepend", "later")
-
     machine = QSM()
-    machine.state_map["initial_state"] = PrependInitialState()
     machine.state_map["prepend"] = PrependState()
     machine.state_map["later"] = RecordingState("later", calls)
     machine.state_map["urgent"] = RecordingState("urgent", calls)
 
-    machine.loop()
+    machine.queue.append("prepend", "later")
+    machine.loop(flush=False)
 
     assert calls == ["prepend", "urgent", "later"]
 
