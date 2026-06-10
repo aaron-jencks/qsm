@@ -6,7 +6,7 @@ queue QSMQueue
 control State
 Client -> QSM : Calls "loop()"
 loop Until Queue Empty
-QSM -> QSMQueue : Calls "pop()"
+QSM -> QSMQueue : Calls "get()"
 alt Receives None
 QSM -> Client : Returns
 else Received a state name
