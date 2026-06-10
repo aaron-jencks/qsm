@@ -89,7 +89,7 @@ QSM(initial_context=None, initial_state="initial_state", max_queue_size=None)
   `machine.current_state`.
 - `machine.execute_state("state")` executes a registered state by name.
 - `machine.execute_current_state()` executes `machine.current_state`.
-- `machine.loop()` executes queued states until the queue is empty.
+- `machine.loop()` executes queued states until the queue is empty. It starts from a good state, it flushes the queue and enqueues the machine's initial state unless `flush` is `False`. Use `flush=False` to allow yourself to prime the queue prior to calling.
 
 ### `State`
 
