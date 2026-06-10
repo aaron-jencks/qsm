@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import logging
 from typing import Any
 
-from deque import StringDequeQueue
+from .deque import StringDequeQueue
 
 logger = logging.getLogger(__name__)
 

@@ -85,11 +85,11 @@ def test_state_can_append_more_states_during_execution() -> None:
             calls.append("append")
             ctx.queue.append("next")
 
-    machine = QSM()
+    machine = QSM(initial_state="append")
     machine.state_map["append"] = AppendState()
     machine.state_map["next"] = RecordingState("next", calls)
 
-    machine.loop(initial_state="append")
+    machine.loop()
 
     assert calls == ["append", "next"]
 

@@ -58,15 +58,14 @@ class QSM:
         """Execute the state named by ``current_state``."""
         self.execute_state(self.current_state)
 
-    def loop(self, initial_state: Optional[str] = None):
+    def loop(self, flush: bool = True):
         """Run queued states until the queue is empty.
 
-        The loop starts by enqueueing ``initial_state`` when provided, otherwise
-        it enqueues ``current_state``.
+        If ``flush`` is True, the loop will flush the current queue and enqueue self.initial_state
         """
-        if initial_state is None and len(self.initial_state) == 0:
-            raise RuntimeError("An initial state must be provided or set before loop is run")
-        self.queue.append(self.initial_state if initial_state is None else initial_state)
+        if flush:
+            self.queue.flush()
+            self.queue.append(self.initial_state)
         while not self.queue.empty():
             state = self.get_next_state()
             if state is not None:

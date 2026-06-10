@@ -101,3 +101,70 @@ def test_task_done_and_join_work_for_prepended_items() -> None:
     join_thread.join(timeout=1)
 
     assert not join_thread.is_alive()
+
+
+def test_flush_empties_appended_and_prepended_items() -> None:
+    queue = StringDequeQueue()
+
+    queue.append("b", "c")
+    queue.prepend("a")
+
+    assert queue.flush() == 3
+    assert queue.empty()
+
+
+def test_flush_on_empty_queue_returns_zero() -> None:
+    queue = StringDequeQueue()
+
+    assert queue.flush() == 0
+
+
+def test_flush_allows_join_to_complete_for_discarded_items() -> None:
+    queue = StringDequeQueue()
+    queue.append("a", "b")
+
+    assert queue.flush() == 2
+
+    join_thread = threading.Thread(target=queue.join)
+    join_thread.start()
+    join_thread.join(timeout=1)
+
+    assert not join_thread.is_alive()
+
+
+def test_flush_preserves_unfinished_in_flight_items() -> None:
+    queue = StringDequeQueue()
+    queue.append("active", "queued")
+
+    assert queue.get_nowait() == "active"
+    assert queue.flush() == 1
+
+    join_thread = threading.Thread(target=queue.join)
+    join_thread.start()
+    join_thread.join(timeout=0.05)
+    assert join_thread.is_alive()
+
+    queue.task_done()
+    join_thread.join(timeout=1)
+    assert not join_thread.is_alive()
+
+
+def test_flush_notifies_blocked_producers() -> None:
+    queue = StringDequeQueue(maxsize=1)
+    queue.append("a")
+    appended = threading.Event()
+
+    def append_later() -> None:
+        queue.append("b", timeout=1)
+        appended.set()
+
+    thread = threading.Thread(target=append_later)
+    thread.start()
+
+    time.sleep(0.01)
+    assert queue.flush() == 1
+
+    thread.join(timeout=1)
+    assert not thread.is_alive()
+    assert appended.is_set()
+    assert queue.get_nowait() == "b"

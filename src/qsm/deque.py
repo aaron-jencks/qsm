@@ -32,6 +32,24 @@ class StringDequeQueue(Queue[str]):
         """Add one or more strings to the front without blocking."""
         self.prepend(*items, block=False)
 
+    def flush(self) -> int:
+        """Remove all queued strings and count them as completed.
+
+        Returns:
+            The number of queued items removed.
+        """
+        with self.mutex:
+            removed = self._qsize()
+            if removed == 0:
+                return 0
+
+            self.queue.clear()
+            self.unfinished_tasks -= removed
+            if self.unfinished_tasks == 0:
+                self.all_tasks_done.notify_all()
+            self.not_full.notify_all()
+            return removed
+
     def _put_string(self, item: str, left: bool, block: bool, timeout: Optional[float]) -> None:
         """Add a single string while holding the queue's producer lock."""
         if not isinstance(item, str):
