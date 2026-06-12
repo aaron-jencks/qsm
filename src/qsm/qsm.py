@@ -1,6 +1,8 @@
+from pathlib import Path
 from queue import Empty
 from typing import Any, Dict, Optional
 
+from .config import QSMConfig
 from .deque import StringDequeQueue
 from .exceptions import NoSuchStateException
 from .states import State, StateContext
@@ -27,6 +29,27 @@ class QSM:
         self.initial_state = initial_state
         self.current_state: str = initial_state
         self.context = initial_context
+
+    @classmethod
+    def from_config(cls, config: QSMConfig):
+        cls = cls(config.initial_context, config.initial_state, config.max_queue_size)
+        cls.state_map = {
+            k: v
+            for k, v in config.states.items()
+        }
+        return cls
+
+    @classmethod
+    def from_json(cls, data: Any):
+        return cls.from_config(QSMConfig.model_validate(data))
+
+    @classmethod
+    def from_json_text(cls, data: Any):
+        return cls.from_config(QSMConfig.model_validate_json(data))
+
+    @classmethod
+    def from_config_file(cls, path: Path):
+        return cls.from_json_text(path.read_text())
 
     def get_next_state(self) -> Optional[str]:
         """Dequeues the next state name and makes it current.
