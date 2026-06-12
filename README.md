@@ -57,6 +57,15 @@ The execution order is:
 2. `hello`
 3. `goodbye`
 
+## JSON Configuration
+
+You can also define a machine from JSON by pointing at importable context and
+state classes. Use `QSM.from_json(data)` for decoded dictionaries,
+`QSM.from_json_text(text)` for JSON strings, or
+`QSM.from_config_file(path)` for files.
+
+See [docs/config.md](docs/config.md) for the full config shape and examples.
+
 ## Prepending Work
 
 `prepend()` places a state at the front of the queue. This is useful for urgent
