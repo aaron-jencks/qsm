@@ -48,6 +48,47 @@ For `initial_context` and every state entry:
 - `model` must be a dotted import path to a class.
 - `kwargs` are passed to that class constructor.
 
+## Runtime Values
+
+Values in `kwargs` can also reference runtime values passed when the config is
+loaded. Use a string that starts with `$`, then pass a keyword argument with the
+same name to the loader.
+
+For example, this config pulls `name` from the `QSM.from_json()` call:
+
+```python
+from qsm import QSM
+
+
+data = {
+    "initial_context": {
+        "model": "my_app.workflow.WorkflowContext",
+        "kwargs": {
+            "name": "$name",
+        },
+    },
+    "states": {
+        "start": {
+            "model": "my_app.workflow.Start",
+            "kwargs": {
+                "next_state": "hello",
+            },
+        },
+        "hello": {
+            "model": "my_app.workflow.Hello",
+            "kwargs": {},
+        },
+    },
+}
+
+machine = QSM.from_json(data, name="World")
+```
+
+Runtime values are available through `QSM.from_json()`,
+`QSM.from_json_text()`, and `QSM.from_config_file()`. `QSM.from_config()`
+expects an already validated `QSMConfig`, so placeholder injection happens
+before that step.
+
 ## Python Classes
 
 Given this module:

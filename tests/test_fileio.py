@@ -71,6 +71,50 @@ def test_from_json_text_configured_machine_can_loop() -> None:
     assert machine.current_state == "finish"
 
 
+def test_from_json_injects_runtime_kwargs_into_models() -> None:
+    config = _config()
+    events = ["existing"]
+    config["initial_context"]["kwargs"]["name"] = "$name"
+    config["initial_context"]["kwargs"]["events"] = "$events"
+    config["states"]["start"]["kwargs"]["label"] = "$label"
+
+    machine = QSM.from_json(
+        config,
+        name="Injected",
+        events=events,
+        label="runtime-label",
+    )
+
+    assert machine.context.name == "Injected"
+    assert machine.context.events is events
+    start = machine.state_map["start"]
+    assert isinstance(start, FileIOStartState)
+    assert start.next_state == "finish"
+    assert start.label == "runtime-label"
+
+
+def test_from_json_text_injects_runtime_kwargs_into_models() -> None:
+    config = _config()
+    events = ["existing"]
+    config["initial_context"]["kwargs"]["name"] = "$name"
+    config["initial_context"]["kwargs"]["events"] = "$events"
+    config["states"]["start"]["kwargs"]["label"] = "$label"
+
+    machine = QSM.from_json_text(
+        json.dumps(config),
+        name="Injected",
+        events=events,
+        label="runtime-label",
+    )
+
+    assert machine.context.name == "Injected"
+    assert machine.context.events is events
+    start = machine.state_map["start"]
+    assert isinstance(start, FileIOStartState)
+    assert start.next_state == "finish"
+    assert start.label == "runtime-label"
+
+
 def test_from_json_text_raises_for_malformed_json() -> None:
     with pytest.raises(ValueError):
         QSM.from_json_text("{not json")
