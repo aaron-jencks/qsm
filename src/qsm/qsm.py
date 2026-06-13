@@ -40,16 +40,20 @@ class QSM:
         return cls
 
     @classmethod
-    def from_json(cls, data: Any):
-        return cls.from_config(QSMConfig.model_validate(data))
+    def from_json(cls, data: Any, **kwargs):
+        return cls.from_config(QSMConfig.model_validate(data, context={
+            "shared": kwargs
+        }))
 
     @classmethod
-    def from_json_text(cls, data: Any):
-        return cls.from_config(QSMConfig.model_validate_json(data))
+    def from_json_text(cls, data: Any, **kwargs):
+        return cls.from_config(QSMConfig.model_validate_json(data, context={
+            "shared": kwargs
+        }))
 
     @classmethod
-    def from_config_file(cls, path: Path):
-        return cls.from_json_text(path.read_text())
+    def from_config_file(cls, path: Path, **kwargs):
+        return cls.from_json_text(path.read_text(), **kwargs)
 
     def get_next_state(self) -> Optional[str]:
         """Dequeues the next state name and makes it current.
